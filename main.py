@@ -555,7 +555,8 @@ def play_quiz():
                 print()
 
 
-# The main menu
+# This is the main menu, the first thing the player sees when they launch the program
+# It runs in a loop so the player can play multiple times without restarting
 def main_menu():
     clear_screen()
     # ASCII-art style banner
@@ -570,6 +571,7 @@ def main_menu():
     print("╚══════════════════════════════════════════╝")
     print(Style.RESET_ALL)
 
+    # Keep showing the menu until the player chooses to quit
     while True:
         print()
         print(Fore.YELLOW + Style.BRIGHT + "Main Menu:")
@@ -577,12 +579,15 @@ def main_menu():
         print(Fore.CYAN + "  2. " + Fore.WHITE + "View leaderboard")
         print(Fore.CYAN + "  3. " + Fore.WHITE + "Quit")
 
+        # Read the player's choice, only 1, 2 or 3 are valid
         choice = read_integer_in_range("Your choice: ", 1, 3)
 
+        # Call the right function depending on the player's choice
         if choice == 1:
             play_quiz()
         elif choice == 2:
             show_leaderboard()
+        # If the player chooses 3 we print a goodbye message and break out of the loop
         else:
             print()
             print(Fore.MAGENTA + Style.BRIGHT + "Thanks for playing! Goodbye 👋")
