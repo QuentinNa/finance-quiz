@@ -230,77 +230,120 @@ def filter_questions(category, difficulty):
 
 ######################################################################################################################################################
 #HERE#
-# Ask the user to pick a category from a list
+# Function to ask the user to pick a category from a predefined list
 def choose_category():
+    # List of all available categories
     categories = ["All", "Accounting", "Corporate Finance", "Valuation", "Markets"]
+
     print()
+    # Print the category selection prompt in yellow and bold
     print(Fore.YELLOW + Style.BRIGHT + "Choose a category:")
+
+    # Loop through each category and print it with its corresponding number
     for i in range(len(categories)):
         print(Fore.CYAN + "  " + str(i + 1) + ". " + Fore.WHITE + categories[i])
+
+    # Ask the user to enter a number between 1 and the total number of categories
+    # read_integer_in_range handles validation and loops until a valid number is entered
     choice = read_integer_in_range("Your choice: ", 1, len(categories))
+
+    # Return the category name at the index of the user's choice
+    # (We subtract 1 because lists start at index 0 but our menu starts at 1)
     return categories[choice - 1]
 
 
-# Ask the user to pick a difficulty level
+# Function to ask the user to pick a difficulty level
+# Works exaclty as the previous function but for difficulty
 def choose_difficulty():
+
+    # List of all available difficulty levels
     difficulties = ["All", "Beginner", "Intermediate", "Expert"]
     print()
+
+    # Print the difficulty selection prompt
     print(Fore.YELLOW + Style.BRIGHT + "Choose a difficulty:")
+
+    # Loop through each difficulty and print it with its corresponding number
     for i in range(len(difficulties)):
         print(Fore.CYAN + "  " + str(i + 1) + ". " + Fore.WHITE + difficulties[i])
+
+    # Ask the user to enter a number between 1 and the total number of difficulties
     choice = read_integer_in_range("Your choice: ", 1, len(difficulties))
+
+    # Return the difficulty name at the index of the user's choice
     return difficulties[choice - 1]
 
 
-# Save the player's score to the CSV file
+# Function to save the player's score to the scores.csv file
+# Takes the player's name, category, difficulty, score and total as parameters
 def save_score(player_name, category, difficulty, score, total):
     try:
+        # Open the scores.csv file in append mode ("a") so we don't overwrite existing scores
         file = open("scores.csv", "a", newline="")
         writer = csv.writer(file)
+
+        # Get the current date and time and format it as "YYYY-MM-DD HH:MM"
         date_string = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        # Write one row with all the information about this game
         writer.writerow([date_string, player_name, category, difficulty, score, total])
         file.close()
+        
+    # If something goes wrong (file is locked, no permission, etc.) we just show a warning
     except IOError:
         print(Fore.YELLOW + "Warning: could not save the score.")
 
 
-# Read all saved scores and display the top 5
-# Uses medals 🥇🥈🥉 for the top 3 to make it more visual
+# Function to read all saved scores and display the top 5
+# Uses medal emojis for the top 3 to make it more visual
 def show_leaderboard():
+    # Try to open and read the scores file
     try:
         file = open("scores.csv", "r", newline="")
         reader = csv.reader(file)
+        # Store all the rows in a list so we can close the file straight away
         rows = list(reader)
         file.close()
+    # If the file doesn't exist yet, no game has been played
     except FileNotFoundError:
         print(Fore.YELLOW + "No scores have been saved yet.")
         return
 
+    # If the file is empty, no game has been played either
     if len(rows) == 0:
         print(Fore.YELLOW + "No scores have been saved yet.")
         return
 
-    # Build a list of (percentage, row data) so we can sort by percentage
+    # Build a list of tuples with the percentage and row data so we can sort by score
     scored_rows = []
     for row in rows:
+        # Skip any row that doesn't have exactly 6 columns (malformed data)
         if len(row) != 6:
             continue
         try:
+            # Convert score and total to integers so we can do math with them
             score = int(row[4])
             total = int(row[5])
+        # Skip the row if score or total can't be converted to an integer
         except ValueError:
             continue
+        # Skip the row if total is 0 to avoid dividing by zero
         if total == 0:
             continue
+        # Calculate the percentage and add all the data as a tuple to the list
         percentage = (score / total) * 100
         scored_rows.append((percentage, row[0], row[1], row[2], row[3], score, total))
 
+    # Sort the list by percentage in descending order so the best score is first
     scored_rows.sort(reverse=True)
 
     print_title("Top 5 Scores")
-    # Medal symbols for the first three places, blank for the rest
+    # Medal emojis for the first three places, blank for the rest
     medals = ["🥇", "🥈", "🥉", "  ", "  "]
+
+    # Loop through the top 5 scores (or less if there aren't 5 yet)
     for i in range(min(5, len(scored_rows))):
+        # Extract each piece of data from the tuple using its index
         percentage = scored_rows[i][0]
         date_string = scored_rows[i][1]
         player_name = scored_rows[i][2]
@@ -308,6 +351,7 @@ def show_leaderboard():
         difficulty = scored_rows[i][4]
         score = scored_rows[i][5]
         total = scored_rows[i][6]
+
         # Color based on rank: gold for 1st, silver for 2nd, bronze for 3rd, white for the rest
         if i == 0:
             color = Fore.YELLOW + Style.BRIGHT
@@ -317,6 +361,8 @@ def show_leaderboard():
             color = Fore.RED
         else:
             color = Fore.WHITE
+
+        # Print the full leaderboard row with medal, name, category, score and date
         print(
             color
             + medals[i]
@@ -340,12 +386,13 @@ def show_leaderboard():
         )
 
 
-# Run one full quiz game from start to finish
+# Finally the function that runs one full game from start to finish
+# It coordinates all the other functions in the right order
 def play_quiz():
     clear_screen()
     print_title("New Game")
 
-    # Ask the player for their name
+    # Ask the player for their name and keep asking until it's not empty
     while True:
         try:
             player_name = input(Fore.GREEN + "Enter your name: ").strip()
@@ -373,11 +420,12 @@ def play_quiz():
     # Filter the question bank using the player's choices
     available_questions = filter_questions(category, difficulty)
 
+    # If no questions match the filters, we stop the game and go back to the menu
     if len(available_questions) == 0:
         print(Fore.RED + "Sorry, no questions are available for this combination.")
         return
 
-    # Let the player choose how many questions
+    # Show how many questions are available with the selected filters
     print()
     print(
         Fore.WHITE
@@ -387,27 +435,32 @@ def play_quiz():
         + Style.NORMAL
         + " questions available with these filters."
     )
+    # Ask how many questions the player wants
     number_of_questions = read_integer_in_range(
         "How many questions do you want? ", 1, len(available_questions)
     )
 
-    # Shuffle and select the questions
+    # Randomly pick the right number of questions so each game is different
     selected_questions = random.sample(available_questions, number_of_questions)
 
-    # Track the score and missed questions
+    # score counts correct answers, missed stores questions the player got wrong
     score = 0
     missed = []
 
-    # Loop through the selected questions
+    # Main game loop, we go through each selected question one by one
     for i in range(len(selected_questions)):
+        # Get the current question and display it on screen
         question = selected_questions[i]
         display_question(question, i + 1, number_of_questions)
         answer = read_answer()
 
+        # Compare the player's answer to the correct answer stored in the question dictionary
         if answer == question["correct"]:
             print(Fore.GREEN + Style.BRIGHT + "✓ Correct!")
             score = score + 1
         else:
+            # We need the index of the correct letter to find the correct answer text
+            # Example: if correct is "B", index is 1, so we get options[1]
             correct_letter = question["correct"]
             letters = "ABCD"
             correct_index = letters.index(correct_letter)
@@ -426,17 +479,19 @@ def play_quiz():
                 + ": "
                 + question["options"][correct_index]
             )
+            # Add the question to the missed list for the review at the end
             missed.append(question)
 
         # Show the running score in cyan
         print(Fore.CYAN + "Score so far: " + str(score) + "/" + str(i + 1))
 
-    # End of game summary
+    # ── END OF GAME ──────────────────────────────────────────────────────────
     print_title("Game Over")
 
-    # Final score in big colored letters depending on performance
+    # Calculate the percentage to decide which comment to show
     percentage = (score / number_of_questions) * 100
 
+    # Pick a color and comment based on the player's performance
     if percentage == 100:
         color = Fore.YELLOW + Style.BRIGHT
         comment = "🌟 Perfect score! Excellent work."
@@ -450,6 +505,7 @@ def play_quiz():
         color = Fore.RED
         comment = "📚 Time to review the basics."
 
+    # Print the final score and comment in the appropriate color
     print(
         color
         + "Final score: "
@@ -463,10 +519,11 @@ def play_quiz():
     print(color + comment)
     print()
 
-    # Save the score
+    # Save the score to the csv file by calling save_score
     save_score(player_name, category, difficulty, score, number_of_questions)
 
-    # Offer a review of missed questions
+    # ── REVIEW SECTION ───────────────────────────────────────────────────────
+    # Only offer a review if the player got at least one question wrong
     if len(missed) > 0:
         print()
         try:
@@ -477,12 +534,15 @@ def play_quiz():
             )
         except EOFError:
             review = "n"
+
+        # If the player says yes, loop through the missed questions and show the correct answer for each
         if review == "y":
             print_title("Review")
             for i in range(len(missed)):
                 question = missed[i]
                 correct_letter = question["correct"]
                 letters = "ABCD"
+                # Find the index of the correct letter to get the full answer text
                 correct_index = letters.index(correct_letter)
                 print(Fore.YELLOW + "Q: " + Fore.WHITE + question["question"])
                 print(
